@@ -6,6 +6,9 @@
     <title>Quick Notes</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#3b82f6">
+
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -15,28 +18,26 @@
             display: none; /* Hidden by default */
         }
         .modal.show {
-            display: flex; /* Show when active */
+            display: flex !important; 
         }
-        /* Custom scrollbar for notes list */
         .notes-list-container::-webkit-scrollbar {
             width: 8px;
         }
         .notes-list-container::-webkit-scrollbar-track {
-            background: #e5e7eb; /* Tailwind gray-200 */
+            background: #e5e7eb;
             border-radius: 10px;
         }
         .notes-list-container::-webkit-scrollbar-thumb {
-            background: #9ca3af; /* Tailwind gray-400 */
+            background: #9ca3af;
             border-radius: 10px;
         }
         .notes-list-container::-webkit-scrollbar-thumb:hover {
-            background: #6b7280; /* Tailwind gray-500 */
+            background: #6b7280;
         }
         .note-item.selected {
-            background-color: #3b82f6; /* Tailwind blue-500 */
+            background-color: #3b82f6;
             color: white;
         }
-         /* Basic styling for custom message box */
         .message-box-overlay {
             position: fixed;
             top: 0;
@@ -44,10 +45,13 @@
             width: 100%;
             height: 100%;
             background-color: rgba(0, 0, 0, 0.5);
-            display: flex;
+            display: none; 
             justify-content: center;
             align-items: center;
-            z-index: 1000; /* Ensure it's on top */
+            z-index: 1000; 
+        }
+        .message-box-overlay.show {
+            display: flex;
         }
         .message-box-content {
             background-color: white;
@@ -58,7 +62,7 @@
             min-width: 300px;
         }
         .message-box-button {
-            background-color: #3b82f6; /* blue-500 */
+            background-color: #3b82f6;
             color: white;
             padding: 8px 16px;
             border-radius: 6px;
@@ -72,9 +76,8 @@
 
     <header class="bg-white shadow-md p-4">
         <div class="container mx-auto flex justify-between items-center">
-            <h1 class="text-2xl font-bold text-gray-800">Quick Notes</h1>
-            <div id="userIdDisplay" class="text-sm text-gray-500">User ID: Loading...</div>
-        </div>
+            <h1 class="text-2xl font-bold text-gray-800">Quick Notes (Local)</h1>
+            </div>
     </header>
 
     <div class="flex-grow container mx-auto p-4 flex gap-4 min-h-0">
@@ -82,16 +85,14 @@
             <button id="openAddNoteModalBtn" class="w-full bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-4 rounded-lg shadow transition duration-150 ease-in-out mb-6">
                 Add New Note
             </button>
-
             <div class="mb-6">
                 <label for="searchInput" class="block text-sm font-medium text-gray-700 mb-1">Search Notes</label>
                 <input type="text" id="searchInput" placeholder="Search by heading..." class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500">
             </div>
-
             <h2 class="text-xl font-semibold text-gray-700 mb-3">My Notes</h2>
             <div id="notesListContainer" class="notes-list-container flex-grow overflow-y-auto border border-gray-200 rounded-lg p-2 bg-gray-50">
                 <ul id="notesList" class="space-y-2">
-                    <li class="p-2 text-center text-gray-500">No notes yet.</li>
+                     <li class="p-2 text-center text-gray-500">No notes yet.</li>
                 </ul>
             </div>
         </div>
@@ -104,7 +105,7 @@
                     </svg>
                     <p class="text-lg">Select a note to view its content, or add a new one.</p>
                 </div>
-                </div>
+            </div>
         </div>
     </div>
 
@@ -115,7 +116,8 @@
                 <button id="closeModalBtn" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
             </div>
             <form id="noteForm">
-                <input type="hidden" id="noteIdInput"> <div class="mb-6">
+                <input type="hidden" id="noteIdInput">
+                <div class="mb-6">
                     <label for="noteHeading" class="block text-sm font-medium text-gray-700 mb-1">Heading</label>
                     <input type="text" id="noteHeading" name="noteHeading" class="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-blue-500 focus:border-blue-500" required>
                 </div>
@@ -131,55 +133,31 @@
         </div>
     </div>
 
-    <div id="customMessageBoxOverlay" class="message-box-overlay" style="display: none;">
+    <div id="customMessageBoxOverlay" class="message-box-overlay">
         <div class="message-box-content">
             <p id="customMessageBoxText"></p>
             <button id="customMessageBoxButton" class="message-box-button">OK</button>
         </div>
     </div>
 
-
-    <script type="module">
-        // Firebase imports
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { 
-            getAuth, 
-            signInAnonymously, 
-            signInWithCustomToken, 
-            onAuthStateChanged 
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { 
-            getFirestore, 
-            collection, 
-            addDoc, 
-            getDocs, 
-            doc, 
-            getDoc, 
-            updateDoc, 
-            deleteDoc, 
-            onSnapshot, 
-            query, 
-            where,
-            Timestamp,
-            setLogLevel
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-
-        // --- Firebase Configuration and Initialization ---
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { /* Add your fallback config here if needed */ };
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-quicknotes-app';
-
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        const auth = getAuth(app);
-        setLogLevel('debug'); // Optional: for Firebase Firestore logging
+    <script>
+        // --- PWA: Service Worker Registration ---
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js') // Ensure sw.js is in the same directory or adjust path
+                    .then(registration => {
+                        console.log('ServiceWorker registration successful with scope: ', registration.scope);
+                    })
+                    .catch(error => {
+                        console.log('ServiceWorker registration failed: ', error);
+                    });
+            });
+        }
 
         // --- Global Variables ---
-        let currentUserId = null;
-        let notesCollectionRef = null;
-        let allNotes = []; // To store all fetched notes for client-side search
-        let unsubscribeNotesListener = null; // To detach listener on auth change
+        const STORAGE_KEY = 'quickNotesApp_notes';
+        let allNotes = []; 
         let selectedNoteId = null;
-
 
         // --- UI Elements ---
         const openAddNoteModalBtn = document.getElementById('openAddNoteModalBtn');
@@ -191,31 +169,63 @@
         const noteHeadingInput = document.getElementById('noteHeading');
         const noteBodyInput = document.getElementById('noteBody');
         const modalTitle = document.getElementById('modalTitle');
-        
         const notesList = document.getElementById('notesList');
         const noteDisplayArea = document.getElementById('noteDisplayArea');
         const placeholderText = document.getElementById('placeholderText');
         const searchInput = document.getElementById('searchInput');
-        const userIdDisplay = document.getElementById('userIdDisplay');
-
+        // const userIdDisplay = document.getElementById('userIdDisplay'); // Removed
         const customMessageBoxOverlay = document.getElementById('customMessageBoxOverlay');
         const customMessageBoxText = document.getElementById('customMessageBoxText');
         const customMessageBoxButton = document.getElementById('customMessageBoxButton');
 
-        // --- Custom Message Box Function ---
-        function showMessage(message) {
-            customMessageBoxText.textContent = message;
-            customMessageBoxOverlay.style.display = 'flex';
+        // --- Utility Functions ---
+        function generateUUID() {
+            var d = new Date().getTime();
+            var d2 = ((typeof performance !== 'undefined') && performance.now && (performance.now()*1000)) || 0;
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                var r = Math.random() * 16;
+                if(d > 0){
+                    r = (d + r)%16 | 0;
+                    d = Math.floor(d/16);
+                } else {
+                    r = (d2 + r)%16 | 0;
+                    d2 = Math.floor(d2/16);
+                }
+                return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+            });
         }
 
-        customMessageBoxButton.addEventListener('click', () => {
-            customMessageBoxOverlay.style.display = 'none';
-        });
+        function escapeHTML(str) {
+            if (typeof str !== 'string') return '';
+            return str.replace(/[&<>"']/g, match => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[match]);
+        }
 
+        // --- Custom Message Box Function ---
+        function showMessage(message) {
+            if (!customMessageBoxOverlay || !customMessageBoxText) {
+                console.error("Custom message box elements not found! Message:", message);
+                return;
+            }
+            customMessageBoxText.textContent = message;
+            customMessageBoxOverlay.classList.add('show');
+        }
+
+        if (customMessageBoxButton) {
+            customMessageBoxButton.addEventListener('click', () => {
+                if(customMessageBoxOverlay) customMessageBoxOverlay.classList.remove('show');
+            });
+        } else {
+            console.error("CRITICAL: Custom message box button not found!");
+        }
 
         // --- Modal Management ---
         function openModal(note = null) {
-            noteForm.reset(); // Clear form
+            if (!addNoteModal || !noteForm || !modalTitle || !noteIdInput || !noteHeadingInput || !noteBodyInput) {
+                console.error("Cannot open modal: One or more modal child elements are not found.");
+                showMessage("Error: Could not display the note form.");
+                return;
+            }
+            noteForm.reset(); 
             if (note) {
                 modalTitle.textContent = 'Edit Note';
                 noteIdInput.value = note.id;
@@ -223,64 +233,65 @@
                 noteBodyInput.value = note.body;
             } else {
                 modalTitle.textContent = 'Add New Note';
-                noteIdInput.value = ''; // Ensure no ID for new notes
+                noteIdInput.value = ''; // Clear ID for new notes
             }
             addNoteModal.classList.add('show');
+            addNoteModal.style.display = 'flex';
         }
 
         function closeModal() {
-            addNoteModal.classList.remove('show');
-        }
-
-        openAddNoteModalBtn.addEventListener('click', () => openModal());
-        closeModalBtn.addEventListener('click', closeModal);
-        cancelModalBtn.addEventListener('click', closeModal);
-
-        // --- Authentication ---
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                console.log("User is signed in:", user.uid);
-                currentUserId = user.uid;
-                userIdDisplay.textContent = `User ID: ${currentUserId}`;
-                notesCollectionRef = collection(db, `artifacts/${appId}/users/${currentUserId}/quicknotes`);
-                loadNotes(); // Load notes for the authenticated user
-            } else {
-                console.log("User is signed out or not yet authenticated.");
-                userIdDisplay.textContent = "User ID: Not authenticated";
-                currentUserId = null;
-                if (unsubscribeNotesListener) {
-                    unsubscribeNotesListener(); // Detach old listener
-                    unsubscribeNotesListener = null;
-                }
-                allNotes = [];
-                renderNotesList(allNotes); // Clear notes list
-                clearNoteDisplay();
-            }
-        });
-
-        async function initializeAuth() {
-            try {
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    console.log("Attempting to sign in with custom token...");
-                    await signInWithCustomToken(auth, __initial_auth_token);
-                } else {
-                    console.log("No custom token, attempting anonymous sign-in...");
-                    await signInAnonymously(auth);
-                }
-            } catch (error) {
-                console.error("Authentication error:", error);
-                showMessage(`Authentication failed: ${error.message}. Please refresh.`);
-                userIdDisplay.textContent = "User ID: Auth Error";
-            }
-        }
-
-
-        // --- Firestore Operations ---
-        async function saveNote(event) {
-            event.preventDefault();
-            if (!currentUserId || !notesCollectionRef) {
-                showMessage("Error: Not authenticated. Cannot save note.");
+            if (!addNoteModal) {
+                console.error("Cannot close modal: #addNoteModal element is not found.");
                 return;
+            }
+            addNoteModal.classList.remove('show');
+            addNoteModal.style.display = 'none';
+        }
+
+        if (openAddNoteModalBtn) openAddNoteModalBtn.addEventListener('click', () => openModal());
+        else console.error("CRITICAL: Add New Note button not found!");
+        
+        if (closeModalBtn) closeModalBtn.addEventListener('click', closeModal);
+        else console.error("CRITICAL: Modal Close (X) button not found!");
+
+        if (cancelModalBtn) cancelModalBtn.addEventListener('click', closeModal);
+        else console.error("CRITICAL: Modal Cancel button not found!");
+        
+        // --- Local Storage Operations ---
+        function loadNotesFromLocalStorage() {
+            const notesJSON = localStorage.getItem(STORAGE_KEY);
+            try {
+                allNotes = notesJSON ? JSON.parse(notesJSON) : [];
+                // Ensure timestamps are Date objects if stored as strings (optional, depends on how you store them)
+                allNotes.forEach(note => {
+                    if (typeof note.createdAt === 'string') note.createdAt = new Date(note.createdAt);
+                    if (typeof note.updatedAt === 'string') note.updatedAt = new Date(note.updatedAt);
+                });
+                allNotes.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+            } catch (e) {
+                console.error("Error parsing notes from local storage:", e);
+                allNotes = [];
+                showMessage("Error loading notes. Data might be corrupted.");
+            }
+            renderNotesList(allNotes);
+            clearNoteDisplay(); // Ensure placeholder is shown if no notes or none selected
+        }
+
+        function saveNotesToLocalStorage() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(allNotes));
+            } catch (e) {
+                console.error("Error saving notes to local storage:", e);
+                showMessage("Error: Could not save notes. Local storage might be full or disabled.");
+            }
+        }
+
+        function handleSaveNoteForm(event) {
+            event.preventDefault();
+            if (!noteHeadingInput || !noteBodyInput || !noteIdInput) {
+                 showMessage("Error: Could not save note due to missing form fields.");
+                 return;
             }
 
             const heading = noteHeadingInput.value.trim();
@@ -292,71 +303,51 @@
                 return;
             }
 
-            const noteData = {
-                heading: heading,
-                body: body,
-                createdAt: Timestamp.now(), // Use Firestore Timestamp for sorting
-                updatedAt: Timestamp.now()
-            };
+            const now = new Date().toISOString();
 
-            try {
-                if (noteId) { // Editing existing note
-                    const noteRef = doc(db, `artifacts/${appId}/users/${currentUserId}/quicknotes`, noteId);
-                    await updateDoc(noteRef, noteData);
+            if (noteId) { // Editing existing note
+                const noteIndex = allNotes.findIndex(note => note.id === noteId);
+                if (noteIndex > -1) {
+                    allNotes[noteIndex].heading = heading;
+                    allNotes[noteIndex].body = body;
+                    allNotes[noteIndex].updatedAt = now;
                     showMessage("Note updated successfully!");
-                } else { // Adding new note
-                    await addDoc(notesCollectionRef, noteData);
-                    showMessage("Note added successfully!");
-                }
-                closeModal();
-                // The onSnapshot listener will automatically update the UI
-            } catch (error) {
-                console.error("Error saving note: ", error);
-                showMessage(`Error saving note: ${error.message}`);
-            }
-        }
-        noteForm.addEventListener('submit', saveNote);
-
-        function loadNotes() {
-            if (!currentUserId || !notesCollectionRef) {
-                 console.log("Cannot load notes: User not authenticated or collection ref not set.");
-                return;
-            }
-            if (unsubscribeNotesListener) {
-                unsubscribeNotesListener(); // Detach previous listener if any
-            }
-
-            // Listen for real-time updates
-            unsubscribeNotesListener = onSnapshot(query(notesCollectionRef), (snapshot) => {
-                allNotes = [];
-                snapshot.forEach((doc) => {
-                    allNotes.push({ id: doc.id, ...doc.data() });
-                });
-                // Sort notes by creation date, newest first (optional)
-                allNotes.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
-                renderNotesList(allNotes);
-                
-                // If a note was selected, try to re-select it or clear display
-                if (selectedNoteId) {
-                    const stillExists = allNotes.find(note => note.id === selectedNoteId);
-                    if (stillExists) {
-                        displayNoteContent(stillExists);
-                    } else {
-                        clearNoteDisplay();
-                        selectedNoteId = null;
+                    if (selectedNoteId === noteId) { // If the edited note was displayed, update display
+                        displayNoteContent(allNotes[noteIndex]);
                     }
+                } else {
+                    showMessage("Error: Note not found for updating.");
+                    closeModal();
+                    loadNotesFromLocalStorage(); // Reload to be safe
+                    return;
                 }
-
-            }, (error) => {
-                console.error("Error fetching notes: ", error);
-                showMessage(`Error fetching notes: ${error.message}`);
-                notesList.innerHTML = '<li class="p-2 text-center text-red-500">Error loading notes.</li>';
-            });
+            } else { // Adding new note
+                const newNote = {
+                    id: generateUUID(),
+                    heading: heading,
+                    body: body,
+                    createdAt: now,
+                    updatedAt: now
+                };
+                allNotes.unshift(newNote); // Add to the beginning for newest first
+                showMessage("Note added successfully!");
+            }
+            
+            allNotes.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+            saveNotesToLocalStorage();
+            renderNotesList(allNotes);
+            closeModal(); 
         }
+        if (noteForm) noteForm.addEventListener('submit', handleSaveNoteForm);
+        else console.error("CRITICAL: Note form #noteForm not found!");
         
         // --- UI Rendering ---
         function renderNotesList(notesToRender) {
-            notesList.innerHTML = ''; // Clear current list
+            if (!notesList) {
+                console.error("Cannot render notes: #notesList element not found.");
+                return;
+            }
+            notesList.innerHTML = ''; 
             if (notesToRender.length === 0) {
                 notesList.innerHTML = '<li class="p-2 text-center text-gray-500">No notes found. Add one!</li>';
                 return;
@@ -364,7 +355,7 @@
 
             notesToRender.forEach(note => {
                 const listItem = document.createElement('li');
-                listItem.classList.add('p-3', 'rounded-md', 'cursor-pointer', 'hover:bg-blue-100', 'transition', 'duration-150', 'ease-in-out', 'note-item', 'border-b', 'border-gray-200');
+                listItem.className = 'p-3 rounded-md cursor-pointer hover:bg-blue-100 transition duration-150 ease-in-out note-item border-b border-gray-200';
                 listItem.textContent = note.heading;
                 listItem.dataset.id = note.id;
 
@@ -375,59 +366,54 @@
                 listItem.addEventListener('click', () => {
                     selectedNoteId = note.id;
                     displayNoteContent(note);
-                    // Re-render list to update selection highlight
-                    renderNotesList(notesToRender);
+                    // Re-render to update selection highlight, considering current search
+                    const currentSearchTerm = searchInput ? searchInput.value.toLowerCase() : "";
+                     const currentList = currentSearchTerm 
+                        ? allNotes.filter(n => n.heading.toLowerCase().includes(currentSearchTerm))
+                        : allNotes; // Use allNotes for sorting before filtering
+                    renderNotesList(currentList.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
                 });
                 notesList.appendChild(listItem);
             });
         }
 
         function displayNoteContent(note) {
-            placeholderText.style.display = 'none'; // Hide placeholder
+            if (!placeholderText || !noteDisplayArea || !note) {
+                console.warn("Cannot display note content: UI elements or note data missing.");
+                clearNoteDisplay();
+                return;
+            }
+            placeholderText.style.display = 'none'; 
             noteDisplayArea.innerHTML = `
                 <div class="flex justify-between items-center mb-4 pb-2 border-b border-gray-200">
                     <h3 class="text-2xl font-semibold text-gray-800 break-words">${escapeHTML(note.heading)}</h3>
                     <div>
                         <button data-id="${note.id}" class="edit-note-btn text-blue-500 hover:text-blue-700 mr-2 p-1 rounded hover:bg-blue-100">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" />
-                            </svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="m16.862 4.487 1.687-1.688a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 0 1 1.13-1.897l8.932-8.931Zm0 0L19.5 7.125M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10" /></svg>
                         </button>
                         <button data-id="${note.id}" class="delete-note-btn text-red-500 hover:text-red-700 p-1 rounded hover:bg-red-100">
-                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12.56 0c1.153 0 2.24.03 3.22.077m3.22-.077L10.875 5.79m0 0a48.266 48.266 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" />
-                            </svg>
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.397m-12.56 0c1.153 0 2.24.03 3.22.077m3.22-.077L10.875 5.79m0 0a48.266 48.266 0 0 1 3.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 0 0-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 0 0-7.5 0" /></svg>
                         </button>
                     </div>
                 </div>
                 <p class="text-gray-700 whitespace-pre-wrap break-words">${escapeHTML(note.body)}</p>
             `;
-            // Add event listeners for edit and delete buttons
-            noteDisplayArea.querySelector('.edit-note-btn').addEventListener('click', handleEditNote);
-            noteDisplayArea.querySelector('.delete-note-btn').addEventListener('click', handleDeleteNote);
+            
+            const editBtn = noteDisplayArea.querySelector('.edit-note-btn');
+            const deleteBtn = noteDisplayArea.querySelector('.delete-note-btn');
+
+            if(editBtn) editBtn.addEventListener('click', handleEditNoteAction);
+            if(deleteBtn) deleteBtn.addEventListener('click', handleDeleteNoteAction);
         }
         
-        function escapeHTML(str) {
-            if (typeof str !== 'string') return '';
-            return str.replace(/[&<>"']/g, function (match) {
-                return {
-                    '&': '&amp;',
-                    '<': '&lt;',
-                    '>': '&gt;',
-                    '"': '&quot;',
-                    "'": '&#39;'
-                }[match];
-            });
-        }
-
-
         function clearNoteDisplay() {
-            noteDisplayArea.innerHTML = ''; // Clear content
-            placeholderText.style.display = 'flex'; // Show placeholder
+            if (!noteDisplayArea || !placeholderText) return;
+            noteDisplayArea.innerHTML = ''; 
+            placeholderText.style.display = 'flex'; 
             selectedNoteId = null;
         }
         
-        async function handleEditNote(event) {
+        function handleEditNoteAction(event) {
             const noteIdToEdit = event.currentTarget.dataset.id;
             const noteToEdit = allNotes.find(note => note.id === noteIdToEdit);
             if (noteToEdit) {
@@ -437,55 +423,43 @@
             }
         }
 
-        async function handleDeleteNote(event) {
+        function handleDeleteNoteAction(event) {
             const noteIdToDelete = event.currentTarget.dataset.id;
-            // Simple confirmation, ideally use a custom modal for this too
-            // For now, using a simple browser confirm, but this is not ideal as per instructions.
-            // Replacing with a custom message box that doesn't actually block execution flow for confirmation.
-            // This is a simplified approach. A real confirm would need more complex modal logic.
-            
-            // For now, let's proceed with delete and show a message.
-            // A better approach would be a custom modal that returns a promise.
-            // For this example, we'll delete directly.
-            // showMessage(`Are you sure you want to delete this note? (This is a placeholder for a real confirm)`);
-            // For now, let's assume "yes" for simplicity, as a proper confirm modal is more involved.
-
-            if (!currentUserId) {
-                 showMessage("Error: Not authenticated. Cannot delete note.");
-                 return;
-            }
-            try {
-                const noteRef = doc(db, `artifacts/${appId}/users/${currentUserId}/quicknotes`, noteIdToDelete);
-                await deleteDoc(noteRef);
-                showMessage("Note deleted successfully.");
-                clearNoteDisplay(); // Clear display as the note is gone
-                // The onSnapshot listener will update the list
-            } catch (error) {
-                console.error("Error deleting note: ", error);
-                showMessage(`Error deleting note: ${error.message}`);
+            // Consider a custom confirmation dialog here
+            // For simplicity, directly deleting:
+            allNotes = allNotes.filter(note => note.id !== noteIdToDelete);
+            saveNotesToLocalStorage();
+            renderNotesList(allNotes);
+            showMessage("Note deleted successfully.");
+            if (selectedNoteId === noteIdToDelete) {
+                clearNoteDisplay();
             }
         }
 
-
         // --- Search Functionality ---
-        searchInput.addEventListener('input', (e) => {
-            const searchTerm = e.target.value.toLowerCase();
-            if (!searchTerm) {
-                renderNotesList(allNotes); // Show all notes if search is empty
-                return;
-            }
-            const filteredNotes = allNotes.filter(note => 
-                note.heading.toLowerCase().includes(searchTerm)
-            );
-            renderNotesList(filteredNotes);
-        });
-
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                const filteredNotes = searchTerm 
+                    ? allNotes.filter(note => note.heading.toLowerCase().includes(searchTerm))
+                    : allNotes; // If search is empty, show all notes
+                // Preserve sort order (newest first) even when searching
+                renderNotesList(filteredNotes.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()));
+            });
+        } else {
+            console.error("CRITICAL: Search input #searchInput not found!");
+        }
+        
         // --- Initial Load ---
         document.addEventListener('DOMContentLoaded', () => {
-            initializeAuth(); // Start authentication process
-            clearNoteDisplay(); // Ensure placeholder is shown initially
+            console.log("QuickNotes App (Local Storage): DOM fully loaded.");
+            if (addNoteModal) {
+                 addNoteModal.style.display = 'none'; 
+                 addNoteModal.classList.remove('show');
+            }
+            loadNotesFromLocalStorage(); 
+            clearNoteDisplay(); 
         });
-
     </script>
 </body>
 </html>
